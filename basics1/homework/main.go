@@ -7,30 +7,37 @@ import "fmt"
 //}
 
 func drawCell(m map[string]string) {
-	fmt.Printf("| \U0001F4AC %s: %s |\n|________________________________________|\n",
-		m["nameKey"], m["nameValue"])
-	fmt.Printf("| \U0001F4D4 %s: %s |\n|________________________________________|\n",
-		m["descriptionKey"], m["descriptionValue"])
-	fmt.Printf("| \U0001F4B5 %s: %s |\n|________________________________________|\n",
-		m["priceKey"], m["priceValue"])
-	fmt.Printf("| \U0001F4CD %s: %s |\n|________________________________________|\n",
-		m["locationKey"], m["locationValue"])
-	fmt.Printf("| \U0001F4E6 %s: %s |\n|________________________________________|\n",
-		m["deliveryKey"], m["deliveryValue"])
+	fmt.Printf("| %s %s: %s |\n|________________________________________|\n",
+		m["nameEmoji"], m["nameKey"], m["nameValue"])
+	fmt.Printf("| %s %s: %s |\n|________________________________________|\n",
+		m["descriptionEmoji"], m["descriptionKey"], m["descriptionValue"])
+	fmt.Printf("| %s %s: %s |\n|________________________________________|\n",
+		m["priceEmoji"], m["priceKey"], m["priceValue"])
+	fmt.Printf("| %s %s: %s |\n|________________________________________|\n",
+		m["locationEmoji"], m["locationKey"], m["locationValue"])
+	fmt.Printf("| %s %s: %s |\n|________________________________________|\n",
+		m["deliveryEmoji"], m["deliveryKey"], m["deliveryValue"])
 }
 
 func main() {
 	cell := map[string]string{
+		"typeOfDraw":       "-",
 		"nameKey":          "Название",
 		"nameValue":        "Станок",
+		"nameEmoji":        "\U0001F4AC",
 		"descriptionKey":   "Описание",
 		"descriptionValue": "Станок для дерева",
+		"descriptionEmoji": "\U0001F4D4",
 		"priceKey":         "Цена",
 		"priceValue":       "100$",
+		"priceEmoji":       "\U0001F4B5",
 		"locationKey":      "Локация",
 		"locationValue":    "Казань",
+		"locationEmoji":    "\U0001F4CD",
 		"deliveryKey":      "Доставка",
 		"deliveryValue":    "Имеется",
+		"deliveryEmoji":    "\U0001F4E6",
+		"color":            "\033[31m",
 	}
 	drawCell(cell)
 }
