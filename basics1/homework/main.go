@@ -5,8 +5,10 @@ import (
 	"strings"
 )
 
+const numberOfSeparator = 40
+
 func printRow(emoji string, key string, value string, cellType string, cellColor string) {
-	fmt.Printf("%s| %s %s: %s |\n|%s|\033[0m\n", cellColor, emoji, key, value, strings.Repeat(cellType, 40))
+	fmt.Printf("%s| %s %s: %s |\n|%s|\033[0m\n", cellColor, emoji, key, value, strings.Repeat(cellType, numberOfSeparator))
 }
 
 func drawCell(m map[string]string) {
