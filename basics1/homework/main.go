@@ -1,43 +1,41 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
-//func main() {
-//	fmt.Println("\033[31mHello \033[0mWorld") // https://www.shellhacks.com/bash-colors/
-//}
+func printRow(emoji string, key string, value string, cellType string, cellColor string) {
+	fmt.Printf("%s| %s %s: %s |\n|%s|\033[0m\n", cellColor, emoji, key, value, strings.Repeat(cellType, 40))
+}
 
 func drawCell(m map[string]string) {
-	fmt.Printf("| %s %s: %s |\n|________________________________________|\n",
-		m["nameEmoji"], m["nameKey"], m["nameValue"])
-	fmt.Printf("| %s %s: %s |\n|________________________________________|\n",
-		m["descriptionEmoji"], m["descriptionKey"], m["descriptionValue"])
-	fmt.Printf("| %s %s: %s |\n|________________________________________|\n",
-		m["priceEmoji"], m["priceKey"], m["priceValue"])
-	fmt.Printf("| %s %s: %s |\n|________________________________________|\n",
-		m["locationEmoji"], m["locationKey"], m["locationValue"])
-	fmt.Printf("| %s %s: %s |\n|________________________________________|\n",
-		m["deliveryEmoji"], m["deliveryKey"], m["deliveryValue"])
+	printRow(m["nameEmoji"], m["nameKey"], m["nameValue"], m["cellType"], m["cellColor"])
+	printRow(m["descriptionEmoji"], m["descriptionKey"], m["descriptionValue"], m["cellType"], m["cellColor"])
+	printRow(m["priceEmoji"], m["priceKey"], m["priceValue"], m["cellType"], m["cellColor"])
+	printRow(m["locationEmoji"], m["locationKey"], m["locationValue"], m["cellType"], m["cellColor"])
+	printRow(m["deliveryEmoji"], m["deliveryKey"], m["deliveryValue"], m["cellType"], m["cellColor"])
 }
 
 func main() {
 	cell := map[string]string{
-		"typeOfDraw":       "-",
+		"cellType":         ".",
+		"cellColor":        "\033[33m",
+		"nameEmoji":        "\U0001F4AC",
 		"nameKey":          "Название",
 		"nameValue":        "Станок",
-		"nameEmoji":        "\U0001F4AC",
+		"descriptionEmoji": "\U0001F4D4",
 		"descriptionKey":   "Описание",
 		"descriptionValue": "Станок для дерева",
-		"descriptionEmoji": "\U0001F4D4",
+		"priceEmoji":       "\U0001F4B5",
 		"priceKey":         "Цена",
 		"priceValue":       "100$",
-		"priceEmoji":       "\U0001F4B5",
+		"locationEmoji":    "\U0001F4CD",
 		"locationKey":      "Локация",
 		"locationValue":    "Казань",
-		"locationEmoji":    "\U0001F4CD",
+		"deliveryEmoji":    "\U0001F4E6",
 		"deliveryKey":      "Доставка",
 		"deliveryValue":    "Имеется",
-		"deliveryEmoji":    "\U0001F4E6",
-		"color":            "\033[31m",
 	}
 	drawCell(cell)
 }
