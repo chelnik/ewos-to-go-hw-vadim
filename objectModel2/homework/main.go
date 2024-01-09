@@ -10,7 +10,7 @@ import (
 	"strconv"
 )
 
-//Операции с невалидными/отсутствующими company, created_at, id добавляем в invalid_operations
+// Операции с невалидными/отсутствующими company, created_at, id добавляем в invalid_operations
 
 type inputDto struct {
 	Company   string `json:"company"`
@@ -44,7 +44,6 @@ func main() {
 	if err != nil {
 		log.Println("json.Unmarshal", err)
 	}
-	var i, j int
 	hoofs := outputDto{
 		Company:              "hoofs",
 		ValidOperationsCount: 0,
@@ -57,80 +56,25 @@ func main() {
 		Balance:              0,
 		InvalidOperations:    nil,
 	}
+	tails := outputDto{
+		Company:              "tails",
+		ValidOperationsCount: 0,
+		Balance:              0,
+		InvalidOperations:    nil,
+	}
+	companies := []outputDto{hoofs, horns, tails}
 	for _, dto := range in {
 		if dto.Company == "hoofs" {
-			if dto.Value == nil && dto.Operation.Value == nil {
-				hoofs.InvalidOperations = append(hoofs.InvalidOperations, dto.Id)
-				continue
-			}
-			if dto.CreatedAt == "" && dto.Operation.CreatedAt == "" {
-				hoofs.InvalidOperations = append(hoofs.InvalidOperations, dto.Id)
-				continue
-			}
-			i++
-			switch dto.Operation.Type {
-			case "+":
-				incomeOperationValue(dto, &hoofs)
-			case "income":
-				incomeOperationValue(dto, &hoofs)
-			case "-":
-				outcomeOperationValue(dto, &hoofs)
-			case "outcome":
-				outcomeOperationValue(dto, &hoofs)
-			//	по дефолту заходим в обычный type
-			default:
-				switch dto.Type {
-				case "+":
-					incomeValue(dto, &hoofs)
-				case "income":
-					incomeValue(dto, &hoofs)
-				case "-":
-					outcomeValue(dto, &hoofs)
-				case "outcome":
-					outcomeValue(dto, &hoofs)
-				default:
-					i--
-					hoofs.InvalidOperations = append(hoofs.InvalidOperations, dto.Id)
-				}
-			}
+			fillCompanyCredentials(&companies[0], dto)
 		}
-
 		if dto.Company == "horns" {
-			if dto.Value == nil && dto.Operation.Value == nil {
-				horns.InvalidOperations = append(horns.InvalidOperations, dto.Id)
-				continue
-			}
-			j++
-			switch dto.Operation.Type {
-			case "+":
-				incomeOperationValue(dto, &horns)
-			case "income":
-				incomeOperationValue(dto, &horns)
-			case "-":
-				outcomeOperationValue(dto, &horns)
-			case "outcome":
-				outcomeOperationValue(dto, &horns)
-			//	по дефолту заходим в обычный type
-			default:
-				switch dto.Type {
-				case "+":
-					incomeValue(dto, &horns)
-				case "income":
-					incomeValue(dto, &horns)
-				case "-":
-					outcomeValue(dto, &horns)
-				case "outcome":
-					outcomeValue(dto, &horns)
-				default:
-					j--
-					horns.InvalidOperations = append(horns.InvalidOperations, dto.Id)
-				}
-			}
+			fillCompanyCredentials(&companies[1], dto)
+		}
+		if dto.Company == "tails" {
+			fillCompanyCredentials(&companies[2], dto)
 		}
 	}
-	hoofs.ValidOperationsCount = i
-	horns.ValidOperationsCount = j
-	companies := []outputDto{hoofs, horns}
+
 	formattedOutput(companies)
 	// Write data to a file
 	err = writeToFile("out.json", companies)
@@ -138,6 +82,50 @@ func main() {
 		fmt.Println("Error writing to file:", err)
 	}
 }
+func appendInvalidOperations(company *outputDto, dto inputDto) {
+	if dto.Id != nil {
+		company.InvalidOperations = append(company.InvalidOperations, dto.Id)
+	} else if dto.Operation.Id != nil {
+		company.InvalidOperations = append(company.InvalidOperations, dto.Operation.Id)
+	}
+}
+func fillCompanyCredentials(company *outputDto, dto inputDto) {
+	if dto.Value == nil && dto.Operation.Value == nil {
+		appendInvalidOperations(company, dto)
+		return
+	}
+	if dto.CreatedAt == "" && dto.Operation.CreatedAt == "" {
+		appendInvalidOperations(company, dto)
+		return
+	}
+	company.ValidOperationsCount++
+	switch dto.Operation.Type {
+	case "+":
+		incomeOperationValue(dto, company)
+	case "income":
+		incomeOperationValue(dto, company)
+	case "-":
+		outcomeOperationValue(dto, company)
+	case "outcome":
+		outcomeOperationValue(dto, company)
+	//	по дефолту заходим в обычный type
+	default:
+		switch dto.Type {
+		case "+":
+			incomeValue(dto, company)
+		case "income":
+			incomeValue(dto, company)
+		case "-":
+			outcomeValue(dto, company)
+		case "outcome":
+			outcomeValue(dto, company)
+		default:
+			company.ValidOperationsCount--
+			appendInvalidOperations(company, dto)
+		}
+	}
+}
+
 func writeToFile(filename string, data []outputDto) error {
 	// Convert data to JSON format
 	jsonData, err := json.MarshalIndent(data, "", "\t")
