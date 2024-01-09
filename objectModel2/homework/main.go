@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"strconv"
@@ -147,7 +146,7 @@ func writeToFile(filename string, data []outputDto) error {
 	}
 
 	// Write JSON data to the file
-	err = ioutil.WriteFile(filename, jsonData, 0644)
+	err = os.WriteFile(filename, jsonData, 0644)
 	if err != nil {
 		return err
 	}
@@ -283,7 +282,7 @@ func getFile() ([]byte, error) {
 }
 
 func readFile(filePath string) []byte {
-	data, err := ioutil.ReadFile(filePath)
+	data, err := os.ReadFile(filePath)
 	if err != nil {
 		fmt.Printf("Ошибка при чтении файла: %v\n", err)
 		os.Exit(1)
