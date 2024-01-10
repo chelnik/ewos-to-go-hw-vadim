@@ -10,22 +10,24 @@ import (
 	"strconv"
 )
 
+const numArgs = 3
+
 // Операции с невалидными/отсутствующими company, created_at, id добавляем в invalid_operations
 
 type inputDto struct {
-	Company   string `json:"company"`
-	Operation struct {
-		Type      string `json:"type,omitempty"`
-		Value     any    `json:"value,omitempty"`
-		Id        any    `json:"id,omitempty"`
-		CreatedAt string `json:"created_at,omitempty"`
-	} `json:"operation,omitempty"`
+	Company   string    `json:"company"`
+	Operation Operation `json:"operation,omitempty"`
+	Type      string    `json:"type,omitempty"`
+	Value     any       `json:"value,omitempty"` // int float string (всегда целочисленное)
+	Id        any       `json:"id,omitempty"`
+	CreatedAt string    `json:"created_at,omitempty"`
+}
+type Operation struct {
 	Type      string `json:"type,omitempty"`
-	Value     any    `json:"value,omitempty"` // int float string (всегда целочисленное)
+	Value     any    `json:"value,omitempty"`
 	Id        any    `json:"id,omitempty"`
 	CreatedAt string `json:"created_at,omitempty"`
 }
-
 type outputDto struct {
 	Company              string `json:"company"`
 	ValidOperationsCount int    `json:"valid_operations_count"`
@@ -34,44 +36,43 @@ type outputDto struct {
 }
 
 func main() {
-	file, err := getFile()
-	if err != nil {
-		log.Fatal(err)
-	}
+	file := getFile()
 	//	записываем результат работы в файл out.json
 	var in []inputDto
-	err = json.Unmarshal(file, &in)
+
+	err := json.Unmarshal(file, &in)
 	if err != nil {
 		log.Println("json.Unmarshal", err)
 	}
+
 	hoofs := outputDto{
 		Company:              "hoofs",
 		ValidOperationsCount: 0,
 		Balance:              0,
 		InvalidOperations:    nil,
 	}
+
 	horns := outputDto{
 		Company:              "horns",
 		ValidOperationsCount: 0,
 		Balance:              0,
 		InvalidOperations:    nil,
 	}
+
 	tails := outputDto{
 		Company:              "tails",
 		ValidOperationsCount: 0,
 		Balance:              0,
 		InvalidOperations:    nil,
 	}
-	companies := []outputDto{hoofs, horns, tails}
+
+	companies := map[string]*outputDto{"hoofs": &hoofs, "horns": &horns, "tails": &tails}
+
 	for _, dto := range in {
-		if dto.Company == "hoofs" {
-			fillCompanyCredentials(&companies[0], dto)
-		}
-		if dto.Company == "horns" {
-			fillCompanyCredentials(&companies[1], dto)
-		}
-		if dto.Company == "tails" {
-			fillCompanyCredentials(&companies[2], dto)
+		if company, ok := companies[dto.Company]; ok {
+			fillCompanyCredentials(company, dto)
+		} else {
+			log.Println("unknown company")
 		}
 	}
 
@@ -82,6 +83,7 @@ func main() {
 		fmt.Println("Error writing to file:", err)
 	}
 }
+
 func appendInvalidOperations(company *outputDto, dto inputDto) {
 	if dto.Id != nil {
 		company.InvalidOperations = append(company.InvalidOperations, dto.Id)
@@ -89,16 +91,19 @@ func appendInvalidOperations(company *outputDto, dto inputDto) {
 		company.InvalidOperations = append(company.InvalidOperations, dto.Operation.Id)
 	}
 }
+
 func fillCompanyCredentials(company *outputDto, dto inputDto) {
 	if dto.Value == nil && dto.Operation.Value == nil {
 		appendInvalidOperations(company, dto)
 		return
 	}
+
 	if dto.CreatedAt == "" && dto.Operation.CreatedAt == "" {
 		appendInvalidOperations(company, dto)
 		return
 	}
 	company.ValidOperationsCount++
+
 	switch dto.Operation.Type {
 	case "+":
 		incomeOperationValue(dto, company)
@@ -126,27 +131,34 @@ func fillCompanyCredentials(company *outputDto, dto inputDto) {
 	}
 }
 
-func writeToFile(filename string, data []outputDto) error {
+func writeToFile(filename string, data map[string]*outputDto) error {
 	// Convert data to JSON format
 	jsonData, err := json.MarshalIndent(data, "", "\t")
 	if err != nil {
 		return err
 	}
 
+	var perm os.FileMode = 0o644
 	// Write JSON data to the file
-	err = os.WriteFile(filename, jsonData, 0644)
+	err = os.WriteFile(filename, jsonData, perm)
 	if err != nil {
 		return err
 	}
 
 	fmt.Printf("Data written to %s\n", filename)
+
 	return nil
 }
 
-func formattedOutput(companies []outputDto) {
+func formattedOutput(companies map[string]*outputDto) {
+	j := 0
+
 	// Format and print the sorted companies
 	fmt.Println("[")
-	for i, company := range companies {
+
+	for _, company := range companies {
+		j++
+
 		fmt.Printf("\t{\n\t\t\"company\": \"%s\",\n\t\t\"valid_operations_count\": %d,\n\t\t\"balance\": %d,\n\t\t\"invalid_operations\": [\n", company.Company, company.ValidOperationsCount, company.Balance)
 
 		// Print each element of InvalidOperations with indentation
@@ -156,102 +168,96 @@ func formattedOutput(companies []outputDto) {
 			if j < len(company.InvalidOperations)-1 {
 				fmt.Print(",")
 			}
+
 			fmt.Println()
 		}
 
 		fmt.Print("\t\t]\n\t}")
 
 		// Add a comma after each element except the last one
-		if i < len(companies)-1 {
+		l := len(companies)
+		if j < l-1 {
 			fmt.Print(",")
 		}
+
 		fmt.Println()
 	}
+
 	fmt.Println("]")
 }
+
 func incomeOperationValue(inDto inputDto, outDto *outputDto) {
-	//	для inDto.Operation.Value
-	switch inDto.Operation.Value.(type) {
+	// Для inDto.Operation.Value
+	switch v := inDto.Operation.Value.(type) {
 	case float64:
-		v, _ := inDto.Operation.Value.(int)
-		outDto.Balance += v
-
+		outDto.Balance += int(v)
 	case string:
-		v, _ := inDto.Operation.Value.(string)
-		vv, _ := strconv.Atoi(v)
-		outDto.Balance += vv
-
+		vv, err := strconv.Atoi(v)
+		if err == nil {
+			outDto.Balance += vv
+		}
 	case int:
-		//type assertion
-		v, _ := inDto.Operation.Value.(int)
 		outDto.Balance += v
 	}
 }
+
 func outcomeOperationValue(inDto inputDto, outDto *outputDto) {
-	//	для inDto.Operation.Value
-	switch inDto.Operation.Value.(type) {
+	// Для inDto.Operation.Value
+	switch v := inDto.Operation.Value.(type) {
 	case float64:
-		v, _ := inDto.Operation.Value.(int)
-		outDto.Balance -= v
-
+		outDto.Balance -= int(v)
 	case string:
-		v, _ := inDto.Operation.Value.(string)
-		vv, _ := strconv.Atoi(v)
-		outDto.Balance -= vv
-
+		vv, err := strconv.Atoi(v)
+		if err == nil {
+			outDto.Balance -= vv
+		}
 	case int:
-		//type assertion
-		v, _ := inDto.Operation.Value.(int)
 		outDto.Balance -= v
 	}
 }
 
 func incomeValue(inDto inputDto, outDto *outputDto) {
 	//	для inDto.Value
-	switch inDto.Value.(type) {
+	switch v := inDto.Value.(type) {
 	case float64:
-		v, _ := inDto.Value.(int)
-		outDto.Balance += v
-
+		outDto.Balance += int(v)
 	case string:
-		v, _ := inDto.Value.(string)
-		vv, _ := strconv.Atoi(v)
-		outDto.Balance += vv
-
+		vv, err := strconv.Atoi(v)
+		if err == nil {
+			outDto.Balance += vv
+		}
 	case int:
-		//type assertion
-		v, _ := inDto.Value.(int)
 		outDto.Balance += v
 	}
 }
+
 func outcomeValue(inDto inputDto, outDto *outputDto) {
-	//	для inDto.Value
-	switch inDto.Value.(type) {
+	// Для inDto.Value
+	switch v := inDto.Value.(type) {
 	case float64:
-		v, _ := inDto.Value.(int)
-		outDto.Balance -= v
-
+		outDto.Balance -= int(v)
 	case string:
-		v, _ := inDto.Value.(string)
-		vv, _ := strconv.Atoi(v)
-		outDto.Balance -= vv
-
+		vv, err := strconv.Atoi(v)
+		if err == nil {
+			outDto.Balance -= vv
+		}
 	case int:
-		//type assertion
-		v, _ := inDto.Value.(int)
 		outDto.Balance -= v
 	}
 }
 
 // читаем файл
-func getFile() ([]byte, error) {
+func getFile() []byte {
+	var doc []byte
 	// Проверяем наличие аргументов командной строки
-	if len(os.Args) == 3 {
+	if len(os.Args) == numArgs {
 		// Определение флага для файла
 		filePath := flag.String("file", "", "Путь к файлу для чтения")
 		flag.Parse()
-		doc := readFile(*filePath)
-		return doc, nil
+
+		doc = readFile(*filePath)
+
+		return doc
 	}
 	// Проверка, был ли передан файл
 
@@ -262,18 +268,21 @@ func getFile() ([]byte, error) {
 		scanner := bufio.NewScanner(os.Stdin)
 		scanner.Scan()
 		filePathFromStdin := scanner.Text()
-		doc := readFile(filePathFromStdin)
-		return doc, nil
+		doc = readFile(filePathFromStdin)
+
+		return doc
 	}
-	doc := readFile(filePathFromEnv)
-	return doc, nil
+
+	doc = readFile(filePathFromEnv)
+
+	return doc
 }
 
 func readFile(filePath string) []byte {
 	data, err := os.ReadFile(filePath)
 	if err != nil {
 		fmt.Printf("Ошибка при чтении файла: %v\n", err)
-		os.Exit(1)
 	}
+
 	return data
 }
